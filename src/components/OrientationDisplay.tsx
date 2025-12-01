@@ -101,8 +101,8 @@ function OrientationDisplay({
           </>
         ) : (
           <div className="orientation-message orientation-message-waiting">
-            <span className="orientation-dot orientation-dot-waiting" />⏳ En
-            attente…
+            <span className="orientation-dot orientation-dot-waiting" />
+            📸 Captures complétées 🎉
           </div>
         )}
       </div>

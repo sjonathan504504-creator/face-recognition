@@ -1,4 +1,4 @@
-## Face recognition frontend
+## Face recognition and capture
 
 ### Synopsis
 

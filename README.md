@@ -70,7 +70,7 @@ npm run build # Builds the production bundle
 
 ---
 
-# Reconaissance faciale et capture
+# Reconnaissance faciale et capture
 
 **Application React + TypeScript** utilisant **MediaPipe Face Landmarker** pour guider l’utilisateur à capturer des images de son visage sous différents angles (liveness check).
 
