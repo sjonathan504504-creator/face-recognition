@@ -39,7 +39,7 @@ export const ORIENTATION_PRESETS: Orientation[] = [
 ];
 
 export const MODEL_PATH: string = "/src/models/face_landmarker.task";
-```
+````
 
 
 ---
@@ -111,7 +111,7 @@ export const ORIENTATION_PRESETS: Orientation[] = [
 ];
 
 export const MODEL_PATH: string = "/src/models/face_landmarker.task";
-```
+````
 
 
 
