@@ -1,73 +1,143 @@
-# React + TypeScript + Vite
+# Facial Recognition and Capture
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+**React + TypeScript application** using **MediaPipe Face Landmarker** to guide the user in capturing images of their face from different angles (liveness check).
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 🔍 Key Features
 
-## React Compiler
+- **Real-time detection** of head angles (yaw, pitch, roll).
+- **Visual and textual guidance** to reach target poses.
+- **Interactive gallery** displaying capture progress.
+- **Centralized configuration** in `src/constants/api.ts`.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### Model Configuration
 
-## Expanding the ESLint configuration
+**Editable data:**
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- **ROTATION_TOLERANCES**: Adjust these values to make detection stricter (lower values) or more lenient (higher values).
+- **ORIENTATION_PRESETS**: Add, remove, or modify target poses. Each object represents a head position to capture.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+````typescript
+import type { Orientation } from "../types/orientation";
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+/**rotation tolerance in degrees */
+export const ROTATION_TOLERANCES = {
+  yaw: 4,
+  pitch: 4,
+  roll: 4,
+} as const;
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+export type RotationToleranceKeys = keyof typeof ROTATION_TOLERANCES;
+
+export const ORIENTATION_PRESETS: Orientation[] = [
+  { yaw: 0, pitch: 0, roll: 0 }, // Centered
+  { yaw: -15, pitch: 0, roll: 0 }, // Left
+  { yaw: 15, pitch: 0, roll: 0 }, // Right
+  { yaw: 0, pitch: -15, roll: 0 }, // Top
+  { yaw: 0, pitch: 15, roll: 0 }, // Bottom
+];
+
+export const MODEL_PATH: string = "/src/models/face_landmarker.task";
+```typescript
+````
+
+---
+
+## 🛠 Technologies
+
+- **Frontend**: React + TypeScript, Vite
+- **Detection**: MediaPipe Face Landmarker
+- **Rendering**: HTML5 `<video>` + `<canvas>`, CSS (theme variables)
+
+---
+
+## 🚀 Installation & Run
+
+### Requirements
+
+- Node.js ≥ 18, npm/yarn/pnpm
+
+### Commands (using npm)
+
+```bash
+git clone https://github.com/sjonathan504504-creator/face-recognition.git
+cd face-recognition
+npm install
+npm run dev   # Starts the development server
+npm run build # Builds the production bundle
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+---
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+# Reconaissance faciale et capture
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+**Application React + TypeScript** utilisant **MediaPipe Face Landmarker** pour guider l’utilisateur à capturer des images de son visage sous différents angles (liveness check).
+
+---
+
+## 🔍 Fonctionnalités clés
+
+- **Détection en temps réel** des angles de tête (yaw, pitch, roll).
+- **Guidage visuel et textuel** pour atteindre les poses cibles.
+- **Galerie interactive** affichant la progression des captures.
+- **Configuration centralisée** dans `src/constants/api.ts`.
+
+### Paramétrage du modèle
+
+**Données modifiables :**
+
+- **ROTATION_TOLERANCES** : Ajustez les valeurs pour rendre la détection plus stricte (valeurs plus petites) ou plus souple (valeurs plus grandes).
+- **ORIENTATION_PRESETS** : Ajoutez, retirez ou modifiez les poses cibles. Chaque objet représente une position de la tête à capturer.
+
+````typescript
+import type { Orientation } from "../types/orientation";
+
+/**rotation tolerance in degrees */
+export const ROTATION_TOLERANCES = {
+  yaw: 4,
+  pitch: 4,
+  roll: 4,
+} as const;
+
+export type RotationToleranceKeys = keyof typeof ROTATION_TOLERANCES;
+
+export const ORIENTATION_PRESETS: Orientation[] = [
+  { yaw: 0, pitch: 0, roll: 0 }, // Centered
+  { yaw: -15, pitch: 0, roll: 0 }, // Left
+  { yaw: 15, pitch: 0, roll: 0 }, // Right
+  { yaw: 0, pitch: -15, roll: 0 }, // Top
+  { yaw: 0, pitch: 15, roll: 0 }, // Bottom
+];
+
+export const MODEL_PATH: string = "/src/models/face_landmarker.task";
+```typescript
+
+
+````
+
+---
+
+## 🛠 Technologies
+
+- **Frontend** : React + TypeScript, Vite.
+- **Détection** : MediaPipe Face Landmarker.
+- **Affichage** : HTML5 `<video>` + `<canvas>`, CSS (variables de thème).
+
+---
+
+## 🚀 Installation & Lancement
+
+### Prérequis
+
+- Node.js ≥ 18, npm/yarn/pnpm.
+
+### Commandes (avec npm)
+
+```bash
+git clone https://github.com/sjonathan504504-creator/face-recognition.git
+cd face-recognition
+npm install
+npm run dev  # Démarre le serveur de développement
+npm run build  # Génère le build de production
 ```

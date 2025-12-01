@@ -1,0 +1,17 @@
+/*blue theme*/
+:root {
+  /*TODO : revoire le nom des thèmes et comment on les utilise*/
+  --accent-normal: #012867;
+  --accent-cart: #8faaf4;
+  --accent-soft: #c5c5f8;
+  --accent-border: #0c376c;
+  --accent-dark: #0349a5;
+}
+
+/* green theme */
+/*
+:root {
+  --accent-color: #16a34a;
+  --accent-color-soft: #dcfce7;
+}
+*/

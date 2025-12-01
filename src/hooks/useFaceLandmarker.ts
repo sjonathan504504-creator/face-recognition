@@ -6,80 +6,106 @@ import {
 } from "@mediapipe/tasks-vision";
 import type { Orientation } from "../types/orientation";
 import type { CapturedImage } from "../types/capturedImage";
+import type { VideoDisplayRef } from "../components/VideoDisplayInternal";
+import { MODEL_PATH, ROTATION_TOLERANCES } from "../constants";
 
-interface UseFaceLandmakerProps {
+interface UseFaceLandmarkerProps {
   onOrientation: (orientation: Orientation) => void;
-  //onScreenshot: (image: CapturedImage) => void;
+  onScreenshot: (image: CapturedImage) => void;
   targetFPS: number;
-  targetOrientation?: Orientation;
+  targetOrientation: Orientation;
+  videoDisplayRef: React.RefObject<VideoDisplayRef | null>;
 }
 
 export function useFaceLandmarker({
   onOrientation,
-  //onScreenshot,
+  onScreenshot,
   targetFPS = 30 /*default*/,
   targetOrientation = {} /**default undefined */,
-}: UseFaceLandmakerProps) {
+  videoDisplayRef,
+}: UseFaceLandmarkerProps) {
   const faceLandmarkerRef = useRef<FaceLandmarker | null>(null);
   const animationFrameRef = useRef(0); /* for cleaning at the end */
   const lastRenderTimeStamp = useRef(0);
   const [isReady, setIsReady] = useState(false);
 
-  const renderLoop = useCallback(
-    function loop(video: HTMLVideoElement, canvas: HTMLCanvasElement) {
-      const now = performance.now();
-      const interval = 1000 / targetFPS; /* interval between frames in ms */
-      if (now - lastRenderTimeStamp.current < interval) {
-        /* requestAnimationFrame guarantees 60 FPS between frames => not too scandalous loop */
+  const targetOrientationRef = useRef(targetOrientation);
+  useEffect(() => {
+    targetOrientationRef.current = targetOrientation; // update without re-render
+  }, [targetOrientation]);
 
-        animationFrameRef.current = requestAnimationFrame(() =>
-          loop(video, canvas)
-        );
+  const renderLoop = useCallback(
+    function loop() {
+      const video = videoDisplayRef.current?.getVideo();
+      const canvas = videoDisplayRef.current?.getCanvas();
+
+      if (!video || !canvas) {
+        animationFrameRef.current = requestAnimationFrame(() => loop());
+        return;
+      }
+
+      const now = performance.now();
+      const interval = 1000 / targetFPS;
+      if (now - lastRenderTimeStamp.current < interval) {
+        animationFrameRef.current = requestAnimationFrame(() => loop());
         return;
       }
       lastRenderTimeStamp.current = now;
 
-      if (!faceLandmarkerRef.current) return; /* landmarker not ready */
-      if (video.readyState < video.HAVE_ENOUGH_DATA)
-        return; /* video not ready */
+      if (!faceLandmarkerRef.current) {
+        animationFrameRef.current = requestAnimationFrame(() => loop());
+        return;
+      }
+
+      if (video.readyState < video.HAVE_ENOUGH_DATA) {
+        animationFrameRef.current = requestAnimationFrame(() => loop());
+        return;
+      }
 
       const ctx = canvas.getContext("2d");
-      if (!ctx)
-        return; /* verify ctx is OK ; but don't log in prod, we're in a loop ! */
+      if (!ctx) {
+        animationFrameRef.current = requestAnimationFrame(() => loop());
+        return;
+      }
 
-      canvas.width = video.videoWidth; //video.width;
-      canvas.height = video.videoHeight; //video.height;
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
 
       ctx.drawImage(video, 0, 0);
-      const results = faceLandmarkerRef.current.detectForVideo(video, now);
 
-      //console.log(results);
+      const results = faceLandmarkerRef.current.detectForVideo(video, now);
 
       const orientation: Orientation =
         calculateHeadOrientationFromMatrix(results);
 
-      // if (isOrientationCloseToTarget(orientation, targetOrientation)) {
-      //   onScreenshot({
-      //     image: canvas.toDataURL("image/png"),
-      //     name: now.toString(),
-      //     orientation,
-      //   });
-      // }
-
+      if (
+        isOrientationCloseToTarget(orientation, targetOrientationRef.current)
+      ) {
+        console.log("taking screenshot");
+        onScreenshot({
+          image: canvas.toDataURL("image/png"),
+          name: now.toString(),
+          orientation,
+        });
+        /* prevent taking several captures at the same time, before targetOrientation gets properly updated */
+        targetOrientationRef.current = {};
+      }
       onOrientation(orientation); /**relay information to parent component */
 
-      animationFrameRef.current = requestAnimationFrame(() =>
-        renderLoop(video, canvas)
-      );
+      animationFrameRef.current = requestAnimationFrame(loop);
     },
-    [onOrientation, targetFPS]
+    [
+      onOrientation,
+      onScreenshot,
+      targetFPS,
+      targetOrientationRef,
+      videoDisplayRef,
+    ]
   );
 
-  const startRender = useCallback(
-    (video: HTMLVideoElement, canvas: HTMLCanvasElement) =>
-      renderLoop(video, canvas),
-    [renderLoop]
-  );
+  const startRender = useCallback(() => {
+    renderLoop();
+  }, [renderLoop]);
 
   useEffect(() => {
     async function init() {
@@ -91,9 +117,7 @@ export function useFaceLandmarker({
           vision,
           {
             baseOptions: {
-              /**TODO : remplacer par le chemin en local */
-              modelAssetPath:
-                "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/latest/face_landmarker.task",
+              modelAssetPath: MODEL_PATH,
             },
             runningMode: "VIDEO",
             numFaces: 1,
@@ -125,7 +149,7 @@ const calculateHeadOrientationFromMatrix = (results: FaceLandmarkerResult) => {
   const m = results.facialTransformationMatrixes?.[0]?.data;
 
   if (!m || m.length !== 16) {
-    return { yaw: undefined, pitch: undefined }; //, roll: undefined };
+    return { yaw: undefined, pitch: undefined, roll: undefined };
   }
 
   const toDeg = (r: number) => r * (180 / Math.PI);
@@ -139,8 +163,7 @@ const calculateHeadOrientationFromMatrix = (results: FaceLandmarkerResult) => {
 
 function isOrientationCloseToTarget(
   orientation: Orientation,
-  targetOrientation: Orientation,
-  tolerance: number = 1 // degrés de tolérance => à mette à part en variable globale ?
+  targetOrientation: Orientation
 ): boolean {
   if (
     orientation.pitch === undefined ||
@@ -154,53 +177,11 @@ function isOrientationCloseToTarget(
   }
 
   return (
-    Math.abs(orientation.yaw - targetOrientation.yaw) <= tolerance &&
-    Math.abs(orientation.pitch - targetOrientation.pitch) <= tolerance &&
-    Math.abs(orientation.roll - targetOrientation.roll) <= tolerance
+    Math.abs(orientation.yaw - targetOrientation.yaw) <=
+      ROTATION_TOLERANCES.yaw &&
+    Math.abs(orientation.pitch - targetOrientation.pitch) <=
+      ROTATION_TOLERANCES.pitch &&
+    Math.abs(orientation.roll - targetOrientation.roll) <=
+      ROTATION_TOLERANCES.roll
   );
 }
-
-/**
- * Calcule yaw et pitch à partir de la matrice de transformation MediaPipe FaceLandmarker ; NB : ne marche pas trop pour le pitch
- */
-// const calculateHeadOrientation = (results: FaceLandmarkerResult) => {
-//   const landmarks = results.faceLandmarks?.[0];
-//   if (!landmarks) {
-//     console.log("undefined yaw and pitch");
-//     return { yaw: undefined, pitch: undefined };
-//   }
-
-//   const RAD_TO_DEG = 180 / Math.PI;
-
-//   // Landmarks utiles (indices MediaPipe)
-//   const LEFT_EYE = 33;
-//   const RIGHT_EYE = 263;
-//   const NOSE_TIP = 1;
-//   const LEFT_CHEEK = 234;
-//   const RIGHT_CHEEK = 454;
-
-//   const nose = landmarks[NOSE_TIP];
-//   const leftEye = landmarks[LEFT_EYE];
-//   const rightEye = landmarks[RIGHT_EYE];
-//   const leftCheek = landmarks[LEFT_CHEEK];
-//   const rightCheek = landmarks[RIGHT_CHEEK];
-
-//   /** ---- Pitch (haut / bas) ----
-//    * Angle vertical du nez par rapport à la ligne des yeux
-//    */
-//   const eyeCenterY = (leftEye.y + rightEye.y) / 2;
-//   const dy = nose.y - eyeCenterY; // positif si le nez descend
-//   const pitch = -Math.atan(dy * 4) * RAD_TO_DEG; // facteur ajustable pour sensibilité
-
-//   /** ---- Yaw (gauche / droite) ----
-//    * Basé sur la différence de profondeur entre les joues
-//    * Si la joue gauche est plus proche (z plus petit) -> yaw positif (tourné à droite)
-//    */
-//   const dz = leftCheek.z - rightCheek.z;
-//   const yaw = Math.atan(dz * 4) * RAD_TO_DEG;
-
-//   return {
-//     yaw: Math.max(-45, Math.min(45, yaw)),
-//     pitch: Math.max(-30, Math.min(30, pitch)),
-//   };
-// };
