@@ -1,4 +1,4 @@
-# Facial Recognition and Capture
+# Face Recognition and Capture
 
 **React + TypeScript application** using **MediaPipe Face Landmarker** to guide the user in capturing images of their face from different angles (liveness check).
 
@@ -39,8 +39,8 @@ export const ORIENTATION_PRESETS: Orientation[] = [
 ];
 
 export const MODEL_PATH: string = "/src/models/face_landmarker.task";
-```typescript
 ````
+
 
 ---
 
@@ -111,10 +111,10 @@ export const ORIENTATION_PRESETS: Orientation[] = [
 ];
 
 export const MODEL_PATH: string = "/src/models/face_landmarker.task";
-```typescript
-
-
 ````
+
+
+
 
 ---
 
